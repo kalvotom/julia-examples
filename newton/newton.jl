@@ -20,18 +20,22 @@ using Color, FixedPointNumbers, Images
 	return tmp
 end
 
-function paranewton(roots, colors, f, maxiter, eps, bounds, nre, nim)
+function paranewton(roots, colors, f, maxiter, eps, bounds, width, height)
 	remin, remax, immin, immax = bounds
-	steps = ((remax-remin)/nre, (immax-immin)/nim)
+	steps = ((remax-remin)/width, (immax-immin)/height)
 
-	mat = DArray(I -> slicefill(I, f, roots, colors, maxiter, eps, bounds, steps), (nim, nre))
+	mat = DArray(I -> slicefill(I, f, roots, colors, maxiter, eps, bounds, steps), (height, width))
 
 	return convert(Array, mat)
 end
 
 function getimage(matrix)
-	rgbmatrix = map(rgb -> RGB{Float64}(rgb[1],rgb[2],rgb[3]), matrix)
+	rgbmatrix = map(rgb -> RGB{Float64}(rgb[1],rgb[2],rgb[3]), flipud(matrix))
 	return convert(Image, rgbmatrix)
 end
 
-println("Number of available workers: ",length(workers()))
+function saveimage(matrix, file)
+	imwrite(getimage(matrix), file)
+end
+
+println("Number of available workers: ", length(workers()))
