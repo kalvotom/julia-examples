@@ -1,5 +1,5 @@
 
-@everywhere const roots3 = Complex64[exp(2im*pi/3), exp(4im*pi/3), 1.0]
+@everywhere const roots3 = Complex64[1.0, exp(2im*pi/3), exp(4im*pi/3)]
 @everywhere const colors3 = ([1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,1.0])
 
 @everywhere function cubic(z0, roots, colors, maxiter, eps)
