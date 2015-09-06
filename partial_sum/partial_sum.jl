@@ -6,7 +6,7 @@
 
 using Images, Colors, FixedPointNumbers
 
-# 
+# summands
 u(n) = n*log(n)*sqrt(2)
 z(n) = exp(2im*pi*u(n))
 
