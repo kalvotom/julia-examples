@@ -56,16 +56,20 @@ function phase_space_image(;width=800, height=1600, tmin=0., tmax=period, vmin=1
     tox(t) = convert(Int64, floor(width*(t-tmin)/(tmax-tmin)))
     toy(v) = convert(Int64, floor(height*(v-vmin)/(vmax-vmin)))
     number_of_trajectories = convert(Int64, ceil((vmax-vmin)/deltav))
-    j = 1
     getcolor(j) = convert(RGB, HSV(360.*j/number_of_trajectories, 1, 1))
     v = vmin + deltav
+    j = 1
 
     info("Computing trajectories...")
     p = Progress(number_of_trajectories, 1)
 
     while v <= vmax
         trajectory = fermi(tmin+rand()*(tmax-tmin), v, nmax)
-        clr = getcolor(j)
+        if isodd(j)
+            clr = getcolor(j)
+        else
+            clr = getcolor(number_of_trajectories-j)
+        end
         draw_trajectory(trajectory, img, tox, toy, [clr.r, clr.g, clr.b])
         v += deltav
         j += 1
