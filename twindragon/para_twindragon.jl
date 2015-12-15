@@ -17,9 +17,9 @@ using LatexPrint
 @everywhere const radius = 20. #not used
 #bounds
 @everywhere const xmin=-3.
-@everywhere const xmax=3.
+const xmax=3.
 @everywhere const ymin=-3.
-@everywhere const ymax=3.
+const ymax=3.
 #sampling
 @everywhere const dx=0.1
 @everywhere const dy=0.1
@@ -35,14 +35,16 @@ const filename = "twindragon_para" #warning, files will be overwritten without m
 
 @everywhere include("Twindragon.jl")
 
-@everywhere dimx = floor(Int64, (xmax - xmin) / dx)
-@everywhere dimy = floor(Int64, (ymax - ymin) / dy)
-@everywhere const number_of_digits = size(digits,2)
+const dimx = floor(Int64, (xmax - xmin) / dx)
+const dimy = floor(Int64, (ymax - ymin) / dy)
 
 image = SharedArray(Float64, dimx, dimy)
 
 @everywhere oldset = SimpleSet(array_length)
 @everywhere newset = SimpleSet(array_length)
+
+@everywhere const mdigits = -digits
+@everywhere const number_of_digits = size(mdigits,2)
 
 
 # function run!()
@@ -80,38 +82,40 @@ end
 
 println("Starting...")
 tic()
-    @sync begin
-        for p=1:np
-            if p != myid() || np == 1
-                @async begin
-                    while true
-                        idx = nextidx()
-                        if idx[1] > dimx
-                            break
-                        end
-                        #results[idx[0]*dimx+idx[1]] =
-                        remotecall_fetch(compute_chunk!, p, image, idx[1], idx[2])
-                        next!(pm)
+@sync begin
+    for p=1:np
+        if p != myid() || np == 1
+            @async begin
+                while true
+                    idx = nextidx()
+                    if idx[1] > dimx
+                        break
                     end
+                    remotecall_fetch(compute_chunk!, p, image, idx[1], idx[2])
+                    next!(pm)
                 end
             end
         end
     end
+end
 toc()
 
 save("$(filename).png", grayim(transpose(flipdim(image,2))))
-#,cmap="RdGy"
 
 PyPlot.matplotlib[:rc]("text", usetex=true)
 PyPlot.matplotlib[:rc]("text.latex",preamble="\\usepackage{amsmath}") #to print matrices in latex
 PyPlot.matplotlib[:rcParams]["text.latex.unicode"] = true #probably not needed
 set_delims("(", ")") #set array delimiters for latex printing
-imshow(transpose(flipdim(image,2)),interpolation="None",extent=[xmin,xmax,ymin,ymax])
+
+imshow(transpose(flipdim(image,2)),cmap="winter",interpolation="None",extent=[xmin,xmax,ymin,ymax])
+
 title(picture_title)
+
 s = string("M = ",latex_form(mat),",D = \\left \\{ ",latex_form(digits[:,1]))
 for d in 2:number_of_digits
     s = string(s,",",latex_form(digits[:,d]))
 end
 s = string(s," \\right \\} ")
 text(xmin,ymin - (ymax-ymin)/10,latexstring(replace(s,"\n","")),fontsize=8)
+
 savefig("$(filename)_pyplot.png",dpi = picture_dpi)
