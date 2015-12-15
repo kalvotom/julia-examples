@@ -29,12 +29,16 @@ end
 
 function append!(set::SimpleSet, x::Vector{Float64})
   set.length += 1
-  set.container[:, set.length] = x
+  set.container[:, set.length] = x # @inbounds would be unwise here
 end
 
 function initiate!(set::SimpleSet, x::Vector{Float64})
   empty!(set)
   append!(set, x)
+end
+
+function multiply!(set::SimpleSet, m::Array{Float64}) #m is expected to by 2x2
+  @inbounds set.container[:, 1:set.length] = m*set.container[:, 1:set.length]
 end
 
 function copy!(source::SimpleSet, target::SimpleSet)
@@ -56,19 +60,22 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
   j = 0
 
   while j < jmax && length(oldset) > 0
+    multiply!(oldset, mat)
     for k in 1:length(oldset)
-      y = mat * oldset.container[:, k] - dig1
+      y = oldset.container[:, k] - dig1
       if in_domain(y)
         append!(newset, y)
       end
-      y = mat * oldset.container[:, k] - dig2
+      y = oldset.container[:, k] - dig2
       if in_domain(y)
         append!(newset, y)
       end
     end
 
     j += 1
-    copy!(newset, oldset)
+    temp = oldset
+    oldset = newset
+    newset = temp
     empty!(newset)
   end
 
