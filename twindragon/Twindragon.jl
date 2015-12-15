@@ -8,12 +8,6 @@
 
 export draw_twindragon, twindragon
 
-# constants
-const mat    = Float64[-1 -1; 1 -1]
-const dig1   = Float64[-1, -1]
-const dig2   = Float64[ 1, -1]
-const radius = 20.
-
 # helper type and functions
 type SimpleSet
   container::Array{Float64}
@@ -38,7 +32,7 @@ function initiate!(set::SimpleSet, x::Vector{Float64})
 end
 
 function multiply!(set::SimpleSet, m::Array{Float64}) #m is expected to by 2x2
-  @inbounds set.container[:, 1:set.length] = m*set.container[:, 1:set.length]
+  @inbounds @fastmath set.container[:, 1:set.length] = m*set.container[:, 1:set.length]
 end
 
 function copy!(source::SimpleSet, target::SimpleSet)
@@ -61,16 +55,23 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
 
   while j < jmax && length(oldset) > 0
     multiply!(oldset, mat)
-    for k in 1:length(oldset)
-      y = oldset.container[:, k] - dig1
-      if in_domain(y)
-        append!(newset, y)
-      end
-      y = oldset.container[:, k] - dig2
-      if in_domain(y)
-        append!(newset, y)
+    @fastmath @simd for k in 1:length(oldset)
+      yy = oldset.container[:, k]
+
+      for d in 1:number_of_digits
+        y = yy - digits[:,d]
+        if in_domain(y)
+          append!(newset, y)
+          if length(newset)==newset.maxlen #TO FIX
+            return 1.
+          end
+        end
       end
     end
+
+    # if length(oldset) > 1000
+    #   return 1.
+    # end
 
     j += 1
     temp = oldset
