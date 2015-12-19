@@ -95,7 +95,7 @@ toc()
 # raw image
 save("$(filename).png", grayim(transpose(flipdim(image,2))))
 
-# pyplot fancy stuff
+# pyplot insanity
 PyPlot.matplotlib[:rc]("text", usetex=true)
 PyPlot.matplotlib[:rc]("text.latex",preamble="\\usepackage{amsmath}") #to print matrices in latex
 PyPlot.matplotlib[:rcParams]["text.latex.unicode"] = true #probably not needed
