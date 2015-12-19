@@ -15,18 +15,18 @@ using LatexPrint
 
 #magic constants
 @everywhere const array_length=500 #yet to be documented
-@everywhere const radius = 20. #not used
+@everywhere const radius = 20.
 
 #bounds
-@everywhere const xmin=-3.
-const xmax=3.
+@everywhere const xmin=-1.7
+const xmax=1.4
 
-@everywhere const ymin=-3.
-const ymax=3.
+@everywhere const ymin=-1.3
+const ymax=2.2
 
 #sampling
-@everywhere const dx=0.01
-@everywhere const dy=0.01
+@everywhere const dx=0.001
+@everywhere const dy=0.001
 
 #picture
 const picture_title = "Twindragon"
@@ -65,30 +65,30 @@ jy = 1
 
 # function to produce the next work item from the queue
 function nextidx()
-    global jx; global jy; global dimy; idx=(jx, jy); jy+=1;
-    if jy > dimy
-        jy = 1; jx+=1;
-    end
-    return idx
+  global jx; global jy; global dimy; idx=(jx, jy); jy+=1;
+  if jy > dimy
+    jy = 1; jx+=1;
+  end
+  return idx
 end
 
 println("Starting...")
 tic()
 @sync begin
-    for p in 1:np
-        if p != myid() || np == 1
-            @async begin
-                while true
-                    idx = nextidx()
-                    if idx[1] > dimx
-                        break
-                    end
-                    remotecall_fetch(compute_chunk!, p, image, idx[1], idx[2])
-                    next!(pm)
-                end
-            end
+  for p in 1:np
+    if p != myid() || np == 1
+      @async begin
+        while true
+          idx = nextidx()
+          if idx[1] > dimx
+            break
+          end
+          remotecall_fetch(compute_chunk!, p, image, idx[1], idx[2])
+          next!(pm)
         end
+      end
     end
+  end
 end
 toc()
 
@@ -101,7 +101,7 @@ PyPlot.matplotlib[:rc]("text.latex",preamble="\\usepackage{amsmath}") #to print 
 PyPlot.matplotlib[:rcParams]["text.latex.unicode"] = true #probably not needed
 set_delims("(", ")") #set array delimiters for latex printing
 
-imshow(transpose(flipdim(image,2)),cmap="winter",interpolation="None",extent=[xmin,xmax,ymin,ymax])
+imshow(transpose(flipdim(image,2)), cmap="Reds", interpolation="lanczos", extent=[xmin,xmax,ymin,ymax])
 
 title(picture_title)
 

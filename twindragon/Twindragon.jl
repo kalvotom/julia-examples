@@ -40,10 +40,10 @@ end
 
 @inline length(set::SimpleSet) = set.length
 
-@inline ball(z::Vector{Float64}) = z[1]^2 + z[2]^2 < 20
+@inline ball(z::Vector{Float64}) = z[1]^2 + z[2]^2 < radius
 
 # twindragon iteration
-function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in_domain::Function, jmax::Int64=50)
+function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in_domain::Function, jmax::Int64=60)
   initiate!(oldset, z)
   empty!(newset)
   y = Float64[0.0, 0.0]
@@ -58,7 +58,7 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
 
         if in_domain(y)
           append!(newset, y)
-          
+
           if length(newset) == newset.maxlen #TO FIX
             return 1.
           end
@@ -74,7 +74,7 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
   end
 
   if j < jmax
-    return 0.
+    return convert(Float64, j/jmax)
   else
     return 1.
   end
