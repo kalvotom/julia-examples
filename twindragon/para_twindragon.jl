@@ -11,21 +11,27 @@ using LatexPrint
 
 # number system setting
 @everywhere const mat    = Float64[-1 -1 ; 1 -1]  #[-1 -1; 1 -1]
-@everywhere const digits = Float64[[0,0] [0,1] [0,-1]]
+@everywhere const digits = Float64[[-1,-1] [1,-1]]
+
 #magic constants
 @everywhere const array_length=500 #yet to be documented
 @everywhere const radius = 20. #not used
+
 #bounds
 @everywhere const xmin=-3.
 const xmax=3.
+
 @everywhere const ymin=-3.
 const ymax=3.
+
 #sampling
-@everywhere const dx=0.1
-@everywhere const dy=0.1
+@everywhere const dx=0.01
+@everywhere const dy=0.01
+
 #picture
 const picture_title = "Twindragon"
 const picture_dpi = 1000
+
 #file
 const filename = "twindragon_para" #warning, files will be overwritten without mercy (or questions)
 
@@ -46,27 +52,13 @@ image = SharedArray(Float64, dimx, dimy)
 @everywhere const mdigits = -digits
 @everywhere const number_of_digits = size(mdigits,2)
 
-
-# function run!()
-#   @sync @parallel for jx = 1:dimx for jy = 1:dimy
-#       @inbounds image[jx, jy] = twindragon([xmin + (jx - 0.5)*dx, ymin + (jy - 0.5)*dy], oldset, newset, ball)
-#     end
-#   end
-#   return image
-# end
-
-# println("Starting...")
-# tic()
-# run!()
-# toc()
-
 @everywhere function compute_chunk!(image, jx, jy)
     @inbounds image[jx, jy] = twindragon([xmin + (jx - 0.5)*dx, ymin + (jy - 0.5)*dy], oldset, newset, ball)
 end
 
 np = nprocs()  # determine the number of processes available
 
-pm = Progress(dimx*dimy, 1)
+pm = Progress(dimx * dimy, 1)
 
 jx = 1
 jy = 1
@@ -83,7 +75,7 @@ end
 println("Starting...")
 tic()
 @sync begin
-    for p=1:np
+    for p in 1:np
         if p != myid() || np == 1
             @async begin
                 while true
@@ -100,8 +92,10 @@ tic()
 end
 toc()
 
+# raw image
 save("$(filename).png", grayim(transpose(flipdim(image,2))))
 
+# pyplot fancy stuff
 PyPlot.matplotlib[:rc]("text", usetex=true)
 PyPlot.matplotlib[:rc]("text.latex",preamble="\\usepackage{amsmath}") #to print matrices in latex
 PyPlot.matplotlib[:rcParams]["text.latex.unicode"] = true #probably not needed
@@ -118,4 +112,4 @@ end
 s = string(s," \\right \\} ")
 text(xmin,ymin - (ymax-ymin)/10,latexstring(replace(s,"\n","")),fontsize=8)
 
-savefig("$(filename)_pyplot.png",dpi = picture_dpi)
+savefig("$(filename)_pyplot.png", dpi = picture_dpi)

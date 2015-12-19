@@ -6,8 +6,6 @@
 # KAM FIT ČVUT, 2015
 #
 
-export draw_twindragon, twindragon
-
 # helper type and functions
 type SimpleSet
   container::Array{Float64}
@@ -23,7 +21,8 @@ end
 
 @inline function append!(set::SimpleSet, x::Vector{Float64})
   set.length += 1
-  @inbounds set.container[:, set.length] = x # @inbounds would be unwise here
+  @inbounds set.container[1, set.length] = x[1] # devectorization
+  @inbounds set.container[2, set.length] = x[2]
 end
 
 @inline function initiate!(set::SimpleSet, x::Vector{Float64})
@@ -32,13 +31,10 @@ end
 end
 
 @inline function multiply!(set::SimpleSet, m::Array{Float64}) #m is expected to by 2x2
-  @inbounds @fastmath set.container[:, 1:set.length] = m*set.container[:, 1:set.length]
-end
-
-@inline function copy!(source::SimpleSet, target::SimpleSet)
-  empty!(target)
-  for j in 1:length(source)
-    append!(target, source.container[:, j])
+  @fastmath @inbounds @simd for j in 1:length(set)
+    a = set.container[1, j]; b = set.container[2, j];
+    set.container[1, j] = m[1,1] * a + m[1,2] * b
+    set.container[2, j] = m[2,1] * a + m[2,2] * b
   end
 end
 
@@ -55,23 +51,20 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
 
   while j < jmax && length(oldset) > 0
     multiply!(oldset, mat)
-    @fastmath @simd for k in 1:length(oldset)
-      yy = mdigits.+oldset.container[:, k]
+    @fastmath @inbounds for d in 1:number_of_digits
+      @simd for k in 1:length(oldset)
+        y[1] = mdigits[1, d] + oldset.container[1, k]
+        y[2] = mdigits[2, d] + oldset.container[2, k]
 
-      for d in 1:number_of_digits
-        y = yy[:,d]
         if in_domain(y)
           append!(newset, y)
-          if length(newset)==newset.maxlen #TO FIX
+          
+          if length(newset) == newset.maxlen #TO FIX
             return 1.
           end
         end
       end
     end
-
-    # if length(oldset) > 1000
-    #   return 1.
-    # end
 
     j += 1
     temp = oldset
@@ -86,21 +79,3 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
     return 1.
   end
 end
-
-# # outputs a matrix
-# function draw_twindragon(xmin=-3., xmax=3., ymin=-3., ymax=3., dx=0.001, dy=0.001, array_length=40)
-#   dimx = floor(Int64, (xmax - xmin) / dx)
-#   dimy = floor(Int64, (ymax - ymin) / dy)
-
-#   image = zeros(Float64, dimx, dimy)
-#   oldset = SimpleSet(array_length)
-#   newset = SimpleSet(array_length)
-
-#   for jx in 1:dimx
-#     for jy in 1:dimy
-#       image[jx, jy] = twindragon([xmin + (jx - 0.5)*dx, ymin + (jy - 0.5)*dy], oldset, newset, ball)
-#     end
-#   end
-
-#   return image
-# end
