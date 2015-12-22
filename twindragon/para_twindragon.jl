@@ -59,10 +59,6 @@ image = SharedArray(T, dimx, dimy)
     @inbounds image[jx, jy] = twindragon([xmin + (jx - T(0.5))*dx, ymin + (jy - T(0.5))*dy], oldset, newset, ball)
 end
 
-np = nprocs()  # determine the number of processes available
-
-pm = Progress(dimx * dimy, 1)
-
 jx = 1
 jy = 1
 
@@ -75,24 +71,31 @@ function nextidx()
   return idx
 end
 
-println("Starting...")
-tic()
-@sync begin
-  for p in 1:np
-    if p != myid() || np == 1
-      @async begin
-        while true
-          idx = nextidx()
-          if idx[1] > dimx
-            break
+function run!(img)
+  np = nprocs()  # determine the number of processes available
+  progress_meter = Progress(dimx * dimy, 1)
+
+  @sync begin
+    for p in 1:np
+      if p != myid() || np == 1
+        @async begin
+          while true
+            idx = nextidx()
+            if idx[1] > dimx
+              break
+            end
+            remotecall_fetch(compute_chunk!, p, image, idx[1], idx[2])
+            next!(progress_meter)
           end
-          remotecall_fetch(compute_chunk!, p, image, idx[1], idx[2])
-          next!(pm)
         end
       end
     end
   end
 end
+
+println("Starting...")
+tic()
+run!(image)
 toc()
 
 # raw image
