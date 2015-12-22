@@ -9,24 +9,27 @@ using LatexPrint
 # settings #
 ############
 
+# type
+@everywhere const T = Float64
+
 # number system setting
-@everywhere const mat    = Float64[-1 -1 ; 1 -1]  #[-1 -1; 1 -1]
-@everywhere const digits = Float64[[-1,-1] [1,-1]]
+@everywhere const mat  = T[-1 -1 ; 1 -1]  #[-1 -1; 1 -1]
+@everywhere const digs = T[[-1,-1] [1,-1]]
 
 #magic constants
-@everywhere const array_length=500 #yet to be documented
-@everywhere const radius = 20.
+@everywhere const array_length = 500 #yet to be documented
+@everywhere const radius = T(20)
 
 #bounds
-@everywhere const xmin=-1.7
-const xmax=1.4
+@everywhere const xmin= T(-1.7)
+const xmax = T(1.4)
 
-@everywhere const ymin=-1.3
-const ymax=2.2
+@everywhere const ymin= T(-1.3)
+const ymax = T(2.2)
 
 #sampling
-@everywhere const dx=0.001
-@everywhere const dy=0.001
+@everywhere const dx = T(0.01)
+@everywhere const dy = T(0.01)
 
 #picture
 const picture_title = "Twindragon"
@@ -41,19 +44,19 @@ const filename = "twindragon_para" #warning, files will be overwritten without m
 
 @everywhere include("Twindragon.jl")
 
-const dimx = floor(Int64, (xmax - xmin) / dx)
-const dimy = floor(Int64, (ymax - ymin) / dy)
+const dimx = floor(Int, (xmax - xmin) / dx)
+const dimy = floor(Int, (ymax - ymin) / dy)
 
-image = SharedArray(Float64, dimx, dimy)
+image = SharedArray(T, dimx, dimy)
 
-@everywhere oldset = SimpleSet(array_length)
-@everywhere newset = SimpleSet(array_length)
+@everywhere oldset = SimpleSet()
+@everywhere newset = SimpleSet()
 
-@everywhere const mdigits = -digits
-@everywhere const number_of_digits = size(mdigits,2)
+@everywhere const mdigits = -1 * digs
+@everywhere const number_of_digits = size(digs, 2)
 
 @everywhere function compute_chunk!(image, jx, jy)
-    @inbounds image[jx, jy] = twindragon([xmin + (jx - 0.5)*dx, ymin + (jy - 0.5)*dy], oldset, newset, ball)
+    @inbounds image[jx, jy] = twindragon([xmin + (jx - T(0.5))*dx, ymin + (jy - T(0.5))*dy], oldset, newset, ball)
 end
 
 np = nprocs()  # determine the number of processes available
@@ -105,9 +108,9 @@ imshow(transpose(flipdim(image,2)), cmap="Reds", interpolation="lanczos", extent
 
 title(picture_title)
 
-s = string("M = ",latex_form(mat),",D = \\left \\{ ",latex_form(digits[:,1]))
+s = string("M = ",latex_form(mat),",D = \\left \\{ ",latex_form(digs[:,1]))
 for d in 2:number_of_digits
-    s = string(s,",",latex_form(digits[:,d]))
+    s = string(s,",",latex_form(digs[:,d]))
 end
 s = string(s," \\right \\} ")
 text(xmin,ymin - (ymax-ymin)/10,latexstring(replace(s,"\n","")),fontsize=8)

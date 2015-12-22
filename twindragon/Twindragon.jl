@@ -8,29 +8,29 @@
 
 # helper type and functions
 type SimpleSet
-  container::Array{Float64}
-  maxlen::Int64
-  length::Int64
+  container::Array{T, 2}
+  maxlen::Int
+  length::Int
 
-  SimpleSet(maxlen) = new(zeros(Float64, 2, maxlen), maxlen, 0)
+  SimpleSet() = new(zeros(T, 2, array_length), array_length, 0)
 end
 
 @inline function empty!(set::SimpleSet)
   set.length = 0
 end
 
-@inline function append!(set::SimpleSet, x::Vector{Float64})
+@inline function append!(set::SimpleSet, x::Vector{T})
   set.length += 1
   @inbounds set.container[1, set.length] = x[1] # devectorization
   @inbounds set.container[2, set.length] = x[2]
 end
 
-@inline function initiate!(set::SimpleSet, x::Vector{Float64})
+@inline function initiate!(set::SimpleSet, x::Vector{T})
   empty!(set)
   append!(set, x)
 end
 
-@inline function multiply!(set::SimpleSet, m::Array{Float64}) #m is expected to by 2x2
+@inline function multiply!(set::SimpleSet, m::Array{T}) #m is expected to by 2x2
   @fastmath @inbounds @simd for j in 1:length(set)
     a = set.container[1, j]; b = set.container[2, j];
     set.container[1, j] = m[1,1] * a + m[1,2] * b
@@ -40,13 +40,13 @@ end
 
 @inline length(set::SimpleSet) = set.length
 
-@inline ball(z::Vector{Float64}) = z[1]^2 + z[2]^2 < radius
+@inline ball(z::Vector{T}) = z[1]^2 + z[2]^2 < radius
 
 # twindragon iteration
-function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in_domain::Function, jmax::Int64=60)
+function twindragon(z::Vector{T}, oldset::SimpleSet, newset::SimpleSet, in_domain::Function, jmax::Int=60)
   initiate!(oldset, z)
   empty!(newset)
-  y = Float64[0.0, 0.0]
+  y = T[0.0, 0.0]
   j = 0
 
   while j < jmax && length(oldset) > 0
@@ -60,7 +60,7 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
           append!(newset, y)
 
           if length(newset) == newset.maxlen #TO FIX
-            return 1.
+            return T(1)
           end
         end
       end
@@ -74,8 +74,8 @@ function twindragon(z::Vector{Float64}, oldset::SimpleSet, newset::SimpleSet, in
   end
 
   if j < jmax
-    return convert(Float64, j/jmax)
+    return convert(T, j/jmax)
   else
-    return 1.
+    return T(1)
   end
 end
